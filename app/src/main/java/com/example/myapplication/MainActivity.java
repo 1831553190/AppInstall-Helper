@@ -1,12 +1,15 @@
 package com.example.myapplication;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 
 import android.Manifest;
 import android.content.ContentResolver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -37,8 +40,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_main);
-//        TextView txv=findViewById(R.id.filePath);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            permissionCheck();
+        }
         Intent i=getIntent();
         Uri d=i.getData();
         if (d!=null&&d.getPath()!=null){
@@ -54,7 +58,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             checkIsAndroidO();
+        }
+    }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void permissionCheck() {
+        if (checkCallingPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
         }
     }
 
@@ -144,6 +154,22 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
                     startActivityForResult(intent, GET_UNKNOWN_APP_SOURCES);
                 }
+            case 1:
+                if (grantResults[0]==-1){
+                    new AlertDialog.Builder(this).setMessage("无法获取读写权限，应用可能无法正常运行。你可以")
+                            .setPositiveButton("重新授权", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    permissionCheck();
+                                }
+                            })
+                            .setNegativeButton("退出", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    finish();
+                                }
+                            }).create().show();
+                }
                 break;
 
         }
@@ -156,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
             case GET_UNKNOWN_APP_SOURCES:
                 checkIsAndroidO();
                 break;
+
 
             default:
                 break;
